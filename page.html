@@ -32,6 +32,11 @@
   .appareil { background: none; border: 1px solid var(--trait); color: var(--texte); font: inherit; font-size: 12px; padding: 5px 10px;
     border-radius: 4px; cursor: pointer; }
   .appareil span { color: var(--doux); margin-left: 6px; }
+  .groupe { display: flex; }
+  .groupe .appareil { border-radius: 4px 0 0 4px; }
+  .renommer { background: none; border: 1px solid var(--trait); border-left: 0; border-radius: 0 4px 4px 0; color: var(--doux); font: inherit;
+    font-size: 12px; padding: 5px 8px; cursor: pointer; }
+  .renommer:hover { color: var(--neon); }
   .appareil[aria-pressed="true"] { border-color: var(--neon); color: var(--neon); box-shadow: 0 0 10px rgb(57 255 156 / .2) inset; }
   .ligne { display: flex; align-items: center; gap: 12px; padding: 5px 0; border-bottom: 1px solid rgb(17 40 59 / .7); font-size: 13px; }
   .ligne:last-child { border-bottom: 0; }
@@ -58,6 +63,22 @@
   .console button.second { border-color: var(--cyan); color: var(--cyan); }
   .console button.second:hover { background: var(--cyan); color: var(--fond); }
   .console button:disabled { opacity: .4; cursor: wait; }
+  .qui { display: block; color: var(--doux); font-size: 11px; }
+  .bloque .qui { color: var(--doux); }
+  .pays { font-size: 11px; color: var(--cyan); border: 1px solid var(--trait); border-radius: 3px; padding: 0 5px; }
+  .barre { display: grid; grid-template-columns: 30px minmax(0, 140px) 1fr 44px; gap: 10px; align-items: center; padding: 4px 0; font-size: 13px; }
+  .barre .code { color: var(--cyan); }
+  .barre .nom { color: var(--doux); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .jauge { height: 6px; background: var(--trait); border-radius: 3px; overflow: hidden; }
+  .jauge i { display: block; height: 100%; background: var(--cyan); }
+  .proposition { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgb(17 40 59 / .7); font-size: 13px; }
+  .proposition:last-child { border-bottom: 0; }
+  .proposition .d { flex: 1; min-width: 0; overflow-wrap: anywhere; color: var(--texte); }
+  button.oui { background: none; border: 1px solid var(--rouge); color: var(--rouge); font: inherit; font-size: 11px; padding: 2px 8px; border-radius: 3px; cursor: pointer; }
+  button.oui:hover { background: var(--rouge); color: var(--fond); }
+  #bloc-propositions { border-color: rgb(255 77 109 / .45); }
+  .credits { grid-column: 1 / -1; color: var(--doux); font-size: 11px; margin: 0; }
+  .credits a { color: inherit; }
   #reponse { white-space: pre-wrap; margin: 12px 0 0; padding: 10px 12px; border-left: 2px solid var(--neon); background: rgb(57 255 156 / .04); }
   #reponse:empty { display: none; }
   :focus-visible { outline: 1px solid var(--neon); outline-offset: 2px; }
@@ -89,6 +110,14 @@
       </form>
       <p id="reponse" aria-live="polite"></p>
     </section>
+    <section aria-labelledby="t-propositions" id="bloc-propositions" hidden>
+      <h2 id="t-propositions">Agent suggestions</h2>
+      <ul id="propositions"></ul>
+    </section>
+    <section aria-labelledby="t-pays">
+      <h2 id="t-pays">Where the traffic goes · 24 h</h2>
+      <ul id="pays"></ul>
+    </section>
     <section aria-labelledby="t-direct">
       <h2 id="t-direct">Live feed</h2>
       <ul id="direct" class="flux"></ul>
@@ -98,6 +127,7 @@
       <ul id="domaines" class="flux"></ul>
     </section>
   </div>
+  <p class="credits">Server countries: <a href="https://db-ip.com">IP Geolocation by DB-IP</a> (CC BY 4.0) · Companies: <a href="https://disconnect.me/trackerprotection">Disconnect tracker list</a> · Blocklist: <a href="https://github.com/StevenBlack/hosts">StevenBlack/hosts</a></p>
 </main>
 <script>
 const jeton = new URLSearchParams(location.search).get("jeton") || "";
@@ -133,16 +163,33 @@ async function rafraichir() {
 
   document.getElementById("appareils").replaceChildren(
     el("li", {}, el("button", { className: "appareil", ariaPressed: String(!choisi), onclick: () => choisir(null), textContent: "whole network" })),
-    ...appareils.map((a) => el("li", {}, el("button", { className: "appareil", ariaPressed: String(choisi === a.ip), onclick: () => choisir(a.ip) },
-      a.ip, el("span", { textContent: a.requetes })))));
+    ...appareils.map((a) => el("li", { className: "groupe" },
+      el("button", { className: "appareil", ariaPressed: String(choisi === a.ip), onclick: () => choisir(a.ip), title: `${a.ip} ${a.mac} ${a.fabricant}` },
+        nomDe(a), el("span", { textContent: a.requetes })),
+      el("button", { className: "renommer", ariaLabel: `Rename ${nomDe(a)}`, title: "Rename", textContent: "✎", onclick: () => renommer(a) }))));
 
   document.getElementById("domaines").replaceChildren(...etat.domaines.map((d) => el("li", { className: "ligne" + (d.bloque ? " bloque" : "") },
-    el("span", { className: "n", textContent: d.requetes }), el("span", { className: "d", textContent: d.domaine }),
-    d.bloque ? "" : el("button", { className: "bloquer", textContent: "block", onclick: () => bloquer(d.domaine) }))));
+    el("span", { className: "n", textContent: d.requetes }),
+    el("span", { className: "d" }, d.domaine, d.entreprise ? el("small", { className: "qui", textContent: `${d.entreprise} · ${d.categorie}` }) : ""),
+    d.pays ? el("span", { className: "pays", textContent: d.pays, title: nomPays(d.pays) }) : "",
+    d.bloque ? el("button", { className: "bloquer", textContent: "unblock", onclick: () => debloquer(d.domaine) })
+             : el("button", { className: "bloquer", textContent: "block", onclick: () => bloquer(d.domaine) }))));
+
+  document.getElementById("bloc-propositions").hidden = !etat.propositions.length;
+  document.getElementById("propositions").replaceChildren(...etat.propositions.map((p) => el("li", { className: "proposition" },
+    el("span", { className: "d" }, p.domaine, el("small", { className: "qui", textContent: p.raison })),
+    el("button", { className: "oui", textContent: "block", onclick: () => decider(p.id, true) }),
+    el("button", { className: "bloquer", textContent: "ignore", onclick: () => decider(p.id, false) }))));
+
+  const max = Math.max(1, ...etat.pays.map((p) => p.requetes));
+  document.getElementById("pays").replaceChildren(...etat.pays.map((p) => el("li", { className: "barre" },
+    el("span", { className: "code", textContent: p.pays }), el("span", { className: "nom", textContent: nomPays(p.pays) }),
+    el("span", { className: "jauge" }, el("i", { style: `width:${(100 * p.requetes / max).toFixed(1)}%` })),
+    el("span", { className: "n", textContent: p.requetes }))));
 
   document.getElementById("direct").replaceChildren(...etat.direct.map((d) => el("li", { className: "ligne" + (d.bloque ? " bloque" : "") },
     el("span", { className: "petit", textContent: heure(d.t) }), el("span", { className: "d", textContent: d.domaine }),
-    el("span", { className: "petit", textContent: d.ip }))));
+    el("span", { className: "petit", textContent: nomDe(appareils.find((a) => a.ip === d.ip) || { ip: d.ip }) }))));
 }
 
 function signal(ok, texte) {
@@ -151,7 +198,35 @@ function signal(ok, texte) {
   document.getElementById("resume-chiffres").textContent = texte;
 }
 
+const regions = new Intl.DisplayNames(["en"], { type: "region" });
+const nomPays = (code) => { try { return code === "?" ? "unknown" : regions.of(code); } catch { return code; } };
+
+// le nom donné, sinon le fabricant (« Apple »), sinon l'IP
+function nomDe(a) {
+  if (a.nom) return a.nom;
+  const marque = a.fabricant && a.fabricant !== "private MAC address" ? a.fabricant.split(",")[0].replace(/( (Inc|Ltd|Co|Corp|Corporation|Technologies|Technology|Electronics|Mobile|Software)\.?)+$/i, "") : "";
+  return marque ? `${marque.slice(0, 22)} · ${a.ip.split(".").pop()}` : a.ip;
+}
+
+async function renommer(a) {
+  const nom = prompt(`Name for ${a.ip} (${a.fabricant || "unknown maker"}):`, a.nom || "");
+  if (nom === null) return;
+  await fetch("/api/nommer", { method: "POST", headers: entetes, body: JSON.stringify({ ip: a.ip, nom }) });
+  rafraichir();
+}
+
 function choisir(ip) { choisi = ip; rafraichir(); }
+
+async function decider(id, accepter) {
+  await fetch("/api/decider", { method: "POST", headers: entetes, body: JSON.stringify({ id, accepter }) });
+  rafraichir();
+}
+
+async function debloquer(domaine) {
+  if (!confirm(`Unblock ${domaine}?`)) return;
+  await fetch("/api/debloquer", { method: "POST", headers: entetes, body: JSON.stringify({ domaine }) });
+  rafraichir();
+}
 
 async function bloquer(domaine) {
   if (!confirm(`Block ${domaine} and all its subdomains?`)) return;
@@ -221,7 +296,8 @@ function dessiner(t) {
     ctx.fillStyle = coul; ctx.beginPath(); ctx.arc(x, y, choisi === a.ip ? 6 : 4.5, 0, 2 * Math.PI); ctx.fill();
     ctx.shadowBlur = 0;
     ctx.fillStyle = choisi === a.ip ? coul : "#5f7d92";
-    ctx.fillText(a.ip, x + 9, y + 4);
+    const texte = nomDe(a), large = ctx.measureText(texte).width;
+    ctx.fillText(texte, x + 9 + large > taille ? x - 9 - large : x + 9, y + 4);  // à gauche du point près du bord droit
   }
   if (!calme) requestAnimationFrame(dessiner);
 }
