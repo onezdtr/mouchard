@@ -42,7 +42,7 @@
   .bloque .d::before { content: "✕ "; }
   #direct .ligne:first-child .d { color: var(--neon); }
   #direct .ligne.bloque:first-child .d { color: var(--rouge); }
-  .flux { max-height: 300px; overflow-y: auto; }
+  .flux { max-height: 300px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--trait) transparent; }
   button.bloquer { background: none; border: 1px solid var(--trait); color: var(--doux); font: inherit; font-size: 11px; padding: 2px 8px;
     border-radius: 3px; cursor: pointer; }
   button.bloquer:hover { border-color: var(--rouge); color: var(--rouge); }
@@ -179,12 +179,14 @@ document.getElementById("bouton-resume").onclick = () => demander("");
 
 // --- Radar : chaque appareil a un angle fixe (tiré de son IP) ; plus il est actif, plus il est près du centre ---
 const toile = document.getElementById("radar"), ctx = toile.getContext("2d");
-const angleDe = (ip) => [...ip].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 360 * Math.PI / 180;
+// angle d'or entre appareils triés par IP : jamais regroupés d'un même côté
+const ordreIp = (ip) => ip.split(".").map((n) => n.padStart(3, "0")).join(".");
 
 function positions(R) {
   const max = Math.max(1, ...appareils.map((a) => a.requetes));
+  const tries = appareils.map((a) => a.ip).sort((x, y) => ordreIp(x).localeCompare(ordreIp(y)));
   return appareils.map((a) => {
-    const r = R * (0.88 - 0.6 * Math.sqrt(a.requetes / max)), ang = angleDe(a.ip);
+    const r = R * (0.88 - 0.55 * Math.sqrt(a.requetes / max)), ang = tries.indexOf(a.ip) * 2.39996 - Math.PI / 3;
     return { a, x: R + r * Math.cos(ang), y: R + r * Math.sin(ang) };
   });
 }
