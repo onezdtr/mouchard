@@ -24,7 +24,7 @@
   main { display: grid; gap: 16px; padding: 16px 24px 32px; grid-template-columns: minmax(320px, 520px) 1fr; max-width: 1400px; margin: 0 auto; }
   @media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 12px 16px 24px; } #resume-chiffres { margin-left: 0; } }
   section { background: rgb(8 18 30 / .85); border: 1px solid var(--trait); border-radius: 6px; padding: 14px 16px; min-width: 0; }
-  h2 { margin: 0 0 10px; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--cyan); font-weight: 500; }
+  h2 { margin: 0 0 10px; font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: var(--cyan); font-weight: 500; }
   .colonne { display: grid; gap: 16px; align-content: start; min-width: 0; }
   #radar { width: 100%; aspect-ratio: 1; display: block; cursor: crosshair; }
   ul { list-style: none; margin: 0; padding: 0; }
@@ -48,7 +48,7 @@
   #direct .ligne:first-child .d { color: var(--neon); }
   #direct .ligne.bloque:first-child .d { color: var(--rouge); }
   .flux { max-height: 300px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--trait) transparent; }
-  button.bloquer { background: none; border: 1px solid var(--trait); color: var(--doux); font: inherit; font-size: 11px; padding: 2px 8px;
+  button.bloquer { background: none; border: 1px solid var(--trait); color: var(--doux); font: inherit; font-size: 12px; padding: 2px 8px;
     border-radius: 3px; cursor: pointer; }
   button.bloquer:hover { border-color: var(--rouge); color: var(--rouge); }
   .console form { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -63,9 +63,9 @@
   .console button.second { border-color: var(--cyan); color: var(--cyan); }
   .console button.second:hover { background: var(--cyan); color: var(--fond); }
   .console button:disabled { opacity: .4; cursor: wait; }
-  .qui { display: block; color: var(--doux); font-size: 11px; }
+  .qui { display: block; color: var(--doux); font-size: 12px; }
   .bloque .qui { color: var(--doux); }
-  .pays { font-size: 11px; color: var(--cyan); border: 1px solid var(--trait); border-radius: 3px; padding: 0 5px; }
+  .pays { font-size: 12px; color: var(--cyan); border: 1px solid var(--trait); border-radius: 3px; padding: 0 5px; }
   .barre { display: grid; grid-template-columns: 30px minmax(0, 140px) 1fr 44px; gap: 10px; align-items: center; padding: 4px 0; font-size: 13px; }
   .barre .code { color: var(--cyan); }
   .barre .nom { color: var(--doux); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -74,10 +74,10 @@
   .proposition { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgb(17 40 59 / .7); font-size: 13px; }
   .proposition:last-child { border-bottom: 0; }
   .proposition .d { flex: 1; min-width: 0; overflow-wrap: anywhere; color: var(--texte); }
-  button.oui { background: none; border: 1px solid var(--rouge); color: var(--rouge); font: inherit; font-size: 11px; padding: 2px 8px; border-radius: 3px; cursor: pointer; }
+  button.oui { background: none; border: 1px solid var(--rouge); color: var(--rouge); font: inherit; font-size: 12px; padding: 2px 8px; border-radius: 3px; cursor: pointer; }
   button.oui:hover { background: var(--rouge); color: var(--fond); }
   #bloc-propositions { border-color: rgb(255 77 109 / .45); }
-  .credits { grid-column: 1 / -1; color: var(--doux); font-size: 11px; margin: 0; }
+  .credits { grid-column: 1 / -1; color: var(--doux); font-size: 12px; margin: 0; }
   .credits a { color: inherit; }
   #reponse { white-space: pre-wrap; margin: 12px 0 0; padding: 10px 12px; border-left: 2px solid var(--neon); background: rgb(57 255 156 / .04); }
   #reponse:empty { display: none; }
