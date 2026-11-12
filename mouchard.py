@@ -93,7 +93,7 @@ def alerter(texte):
         urllib.request.urlopen(urllib.request.Request(f"https://api.telegram.org/bot{jeton}/sendMessage", corps,
                                                       {"Content-Type": "application/json"}), timeout=10)
     except (OSError, ValueError) as e:
-        print("alerte non envoyée :", e, flush=True)
+        print("alert not sent:", e, flush=True)
 
 
 def noter(ip, domaine, bloque):
@@ -104,7 +104,7 @@ def noter(ip, domaine, bloque):
         db.execute("INSERT INTO requetes VALUES (?, ?, ?, ?)", (time.time(), ip, domaine, int(bloque)))
         db.commit()
     if nouveau:
-        threading.Thread(target=alerter, args=(f"Nouvel appareil sur le réseau : {ip} {mac_de(ip)}\n1er domaine : {domaine}",)).start()
+        threading.Thread(target=alerter, args=(f"New device on the network: {ip} {mac_de(ip)}\nFirst domain: {domaine}",)).start()
 
 
 def relayer(paquet):
@@ -133,6 +133,6 @@ class Gestion(socketserver.BaseRequestHandler):
 if __name__ == "__main__":
     import web  # ici, pas en haut : web importe ce module
     serveur = socketserver.ThreadingUDPServer((ECOUTE, PORT), Gestion)
-    print(f"mouchard écoute sur {ECOUTE}:{PORT}, relais {AMONT[0]}", flush=True)
+    print(f"mouchard listening on {ECOUTE}:{PORT}, upstream {AMONT[0]}", flush=True)
     threading.Thread(target=web.servir, args=(ECOUTE,), daemon=True).start()
     serveur.serve_forever()

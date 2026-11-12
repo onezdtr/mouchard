@@ -14,12 +14,13 @@ from pathlib import Path
 from mouchard import BASE, alerter
 
 MODELE = os.environ.get("MOUCHARD_MODELE", "gemini-3.1-flash-lite")
-CONSIGNE = """Tu es l'administrateur réseau d'une maison. On te donne, appareil par appareil, les domaines
-contactés en 24 h (nombre de requêtes, et combien ont été bloquées). Écris en français simple, pour Telegram :
-- une ligne par appareil : ce qu'il fait, d'après ses domaines (ex. « box TV : surtout de la pub et des mesures d'audience ») ;
-- ce qui est suspect ou surprenant (traqueurs, pays inattendu, activité la nuit) ;
-- une liste « À bloquer ? » de domaines de pub ou de pistage, sans jamais proposer un domaine indispensable.
-Pas de markdown, 1500 caractères maximum. Ne cite que des domaines présents dans les données."""
+LANGUE = os.environ.get("MOUCHARD_LANGUE", "English")  # langue du rapport du jour
+CONSIGNE = f"""You are the network administrator of a home. You get, device by device, the domains contacted
+in the last 24 hours (number of requests, and how many were blocked). Write in plain {LANGUE}, for Telegram:
+- one line per device: what it does, judging by its domains (e.g. "TV box: mostly ads and audience tracking");
+- anything suspicious or surprising (trackers, unexpected countries, activity at night);
+- a "Block?" list of ad or tracking domains, never suggesting a domain the device needs to work.
+No markdown, 1500 characters at most. Only mention domains present in the data."""
 
 
 def donnees(depuis):
@@ -37,9 +38,9 @@ def donnees(depuis):
     return list(appareils.values())
 
 
-CONSIGNE_QUESTION = """Tu es l'administrateur réseau d'une maison. On te donne, appareil par appareil, les domaines
-contactés en 24 h, puis une question. Réponds en français simple et court, uniquement d'après ces données ;
-si elles ne permettent pas de répondre, dis-le."""
+CONSIGNE_QUESTION = """You are the network administrator of a home. You get, device by device, the domains contacted
+in the last 24 hours, then a question. Answer briefly and simply, in the language of the question, using only this data;
+if the data cannot answer it, say so."""
 
 
 def cle():
@@ -51,7 +52,7 @@ def cle():
 def demander(donnees_json, question=None):
     """Sans question : le résumé du soir. Avec : la réponse de l'agent à cette question."""
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODELE}:generateContent"
-    texte = donnees_json + (f"\n\nQuestion : {question}" if question else "")
+    texte = donnees_json + (f"\n\nQuestion: {question}" if question else "")
     corps = {"systemInstruction": {"parts": [{"text": CONSIGNE_QUESTION if question else CONSIGNE}]},
              "contents": [{"role": "user", "parts": [{"text": texte}]}]}
     req = urllib.request.Request(url, json.dumps(corps).encode(), {
@@ -63,7 +64,7 @@ def demander(donnees_json, question=None):
 if __name__ == "__main__":
     appareils = donnees(time.time() - 86400)
     if not appareils:
-        texte = "mouchard : aucune requête DNS en 24 h. Le serveur tourne-t-il ?"
+        texte = "mouchard: no DNS request in the last 24 hours. Is the server running?"
     else:
-        texte = "mouchard, résumé du jour\n\n" + demander(json.dumps(appareils, ensure_ascii=False))
+        texte = "mouchard, daily report\n\n" + demander(json.dumps(appareils, ensure_ascii=False))
     print(texte) if "--ecran" in sys.argv else alerter(texte[:4000])

@@ -6,7 +6,7 @@
 
 ![mouchard dashboard: radar of devices, live DNS feed, and the AI agent answering "which device talks to trackers the most?"](docs/demo.gif)
 
-<sub>Demo recorded with simulated devices. The interface is in French.</sub>
+<sub>Demo recorded with simulated devices.</sub>
 
 ## What it does
 
@@ -64,6 +64,7 @@ Then set that machine's IP as the DNS server in your router's DHCP settings, or 
 | `MOUCHARD_PORT_WEB` | `8053` | Dashboard port |
 | `MOUCHARD_AMONT` | `1.1.1.1` | Upstream DNS server |
 | `MOUCHARD_MODELE` | `gemini-3.1-flash-lite` | Gemini model used by the agent |
+| `MOUCHARD_LANGUE` | `English` | Language of the daily report (questions are answered in the language they are asked in) |
 
 **AI agent:** put a [Gemini API key](https://aistudio.google.com/apikey) in `~/.config/mouchard/cle` (`chmod 600`) or in `GEMINI_API_KEY`.
 **Telegram:** the bot token and chat id are read from `~/.config/alternance/telegram` and `~/.config/alternance/telegram_chat`. Without them, alerts are simply skipped.
@@ -84,3 +85,7 @@ Then set that machine's IP as the DNS server in your router's DHCP settings, or 
 | `resume.py` | Daily report (`--ecran` prints it instead of sending it) |
 | `bloquer.txt` | Blocklist, one domain per line |
 | `test_mouchard.py` | Tests |
+
+## License
+
+MIT

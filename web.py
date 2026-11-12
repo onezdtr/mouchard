@@ -57,14 +57,14 @@ def bloquer(domaine):
 
 def demander(question):
     if not resume.cle():
-        return "L'agent n'a pas de clé : mets-la dans ~/.config/mouchard/cle."
+        return "The agent has no API key: put it in ~/.config/mouchard/cle."
     appareils = resume.donnees(time.time() - 86400)
     if not appareils:
-        return "Aucune requête DNS en 24 h : rien à analyser."
+        return "No DNS request in the last 24 hours: nothing to analyse."
     try:
         return resume.demander(json.dumps(appareils, ensure_ascii=False), question or None)
     except (urllib.error.URLError, TimeoutError, KeyError) as e:
-        return f"L'agent n'a pas pu répondre ({e})."
+        return f"The agent could not answer ({e})."
 
 
 class Gestion(BaseHTTPRequestHandler):
@@ -83,7 +83,7 @@ class Gestion(BaseHTTPRequestHandler):
     def do_GET(self):
         url = urlparse(self.path)
         if not self.autorise():
-            return self.repondre(403, b"Jeton manquant : ouvre l'adresse affichee au lancement de mouchard.", "text/plain")
+            return self.repondre(403, b"Missing token: open the URL printed when mouchard starts.", "text/plain")
         if url.path == "/":
             return self.repondre(200, PAGE.read_bytes(), "text/html; charset=utf-8")
         if url.path == "/api/etat":
@@ -108,5 +108,5 @@ class Gestion(BaseHTTPRequestHandler):
 
 
 def servir(ecoute):
-    print(f"tableau de bord : http://{'127.0.0.1' if ecoute == '0.0.0.0' else ecoute}:{PORT_WEB}/?jeton={jeton()}", flush=True)
+    print(f"dashboard: http://{'127.0.0.1' if ecoute == '0.0.0.0' else ecoute}:{PORT_WEB}/?jeton={jeton()}", flush=True)
     ThreadingHTTPServer((ecoute, PORT_WEB), Gestion).serve_forever()

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -67,15 +67,15 @@
 <body>
 <header>
   <h1>◉ MOUCHARD</h1>
-  <span class="ecoute" id="ecoute">EN ÉCOUTE</span>
-  <p id="resume-chiffres">connexion…</p>
+  <span class="ecoute" id="ecoute">LISTENING</span>
+  <p id="resume-chiffres">connecting…</p>
 </header>
 <main>
   <div class="colonne">
     <section aria-labelledby="t-radar">
       <h2 id="t-radar">Radar · 24 h</h2>
-      <canvas id="radar" role="img" aria-label="Radar des appareils du réseau ; utilise les boutons dessous pour en choisir un"></canvas>
-      <ul id="appareils" aria-label="Appareils"></ul>
+      <canvas id="radar" role="img" aria-label="Radar of the devices on the network; use the buttons below to pick one"></canvas>
+      <ul id="appareils" aria-label="Devices"></ul>
     </section>
   </div>
   <div class="colonne">
@@ -83,18 +83,18 @@
       <h2 id="t-agent">Agent</h2>
       <form id="form-question">
         <label for="question">&gt;</label>
-        <input id="question" placeholder="interroger l'agent…" maxlength="500" autocomplete="off">
-        <button type="submit">ENVOYER</button>
-        <button type="button" class="second" id="bouton-resume">RAPPORT DU JOUR</button>
+        <input id="question" placeholder="ask the agent…" maxlength="500" autocomplete="off">
+        <button type="submit">SEND</button>
+        <button type="button" class="second" id="bouton-resume">DAILY REPORT</button>
       </form>
       <p id="reponse" aria-live="polite"></p>
     </section>
     <section aria-labelledby="t-direct">
-      <h2 id="t-direct">Flux en direct</h2>
+      <h2 id="t-direct">Live feed</h2>
       <ul id="direct" class="flux"></ul>
     </section>
     <section aria-labelledby="t-domaines">
-      <h2 id="t-domaines">Domaines les plus contactés</h2>
+      <h2 id="t-domaines">Top domains</h2>
       <ul id="domaines" class="flux"></ul>
     </section>
   </div>
@@ -112,18 +112,18 @@ function el(tag, attrs = {}, ...enfants) {
   e.append(...enfants);
   return e;
 }
-const heure = (t) => new Date(t * 1000).toLocaleTimeString("fr-FR");
+const heure = (t) => new Date(t * 1000).toLocaleTimeString("en-GB");
 
 async function rafraichir() {
   let r;
   try { r = await fetch("/api/etat" + (choisi ? "?ip=" + encodeURIComponent(choisi) : ""), { headers: entetes }); }
-  catch { return signal(false, "mouchard ne répond plus"); }
-  if (!r.ok) return signal(false, "accès refusé : ouvre l'adresse avec le jeton");
+  catch { return signal(false, "mouchard is not responding"); }
+  if (!r.ok) return signal(false, "access denied: open the URL printed at startup, with its token");
   const etat = await r.json();
   const avant = appareils;
   appareils = etat.appareils;
   const total = appareils.reduce((s, a) => s + a.requetes, 0), bloquees = appareils.reduce((s, a) => s + a.bloquees, 0);
-  signal(true, `${appareils.length} appareil${appareils.length > 1 ? "s" : ""} · ${total} requêtes · ${bloquees} bloquée${bloquees > 1 ? "s" : ""}`);
+  signal(true, `${appareils.length} device${appareils.length === 1 ? "" : "s"} · ${total} requests · ${bloquees} blocked`);
 
   for (const a of appareils) {
     if (a.dernier && vus[a.ip] && a.dernier > vus[a.ip]) a.ping = performance.now();
@@ -132,13 +132,13 @@ async function rafraichir() {
   }
 
   document.getElementById("appareils").replaceChildren(
-    el("li", {}, el("button", { className: "appareil", ariaPressed: String(!choisi), onclick: () => choisir(null), textContent: "tout le réseau" })),
+    el("li", {}, el("button", { className: "appareil", ariaPressed: String(!choisi), onclick: () => choisir(null), textContent: "whole network" })),
     ...appareils.map((a) => el("li", {}, el("button", { className: "appareil", ariaPressed: String(choisi === a.ip), onclick: () => choisir(a.ip) },
       a.ip, el("span", { textContent: a.requetes })))));
 
   document.getElementById("domaines").replaceChildren(...etat.domaines.map((d) => el("li", { className: "ligne" + (d.bloque ? " bloque" : "") },
     el("span", { className: "n", textContent: d.requetes }), el("span", { className: "d", textContent: d.domaine }),
-    d.bloque ? "" : el("button", { className: "bloquer", textContent: "bloquer", onclick: () => bloquer(d.domaine) }))));
+    d.bloque ? "" : el("button", { className: "bloquer", textContent: "block", onclick: () => bloquer(d.domaine) }))));
 
   document.getElementById("direct").replaceChildren(...etat.direct.map((d) => el("li", { className: "ligne" + (d.bloque ? " bloque" : "") },
     el("span", { className: "petit", textContent: heure(d.t) }), el("span", { className: "d", textContent: d.domaine }),
@@ -147,14 +147,14 @@ async function rafraichir() {
 
 function signal(ok, texte) {
   document.getElementById("ecoute").classList.toggle("coupe", !ok);
-  document.getElementById("ecoute").textContent = ok ? "EN ÉCOUTE" : "HORS LIGNE";
+  document.getElementById("ecoute").textContent = ok ? "LISTENING" : "OFFLINE";
   document.getElementById("resume-chiffres").textContent = texte;
 }
 
 function choisir(ip) { choisi = ip; rafraichir(); }
 
 async function bloquer(domaine) {
-  if (!confirm(`Bloquer ${domaine} et tous ses sous-domaines ?`)) return;
+  if (!confirm(`Block ${domaine} and all its subdomains?`)) return;
   await fetch("/api/bloquer", { method: "POST", headers: entetes, body: JSON.stringify({ domaine }) });
   rafraichir();
 }
@@ -162,11 +162,11 @@ async function bloquer(domaine) {
 async function demander(question) {
   const sortie = document.getElementById("reponse"), boutons = document.querySelectorAll(".console button");
   boutons.forEach((b) => (b.disabled = true));
-  sortie.textContent = "analyse en cours…";
+  sortie.textContent = "analysing…";
   try {
     const r = await fetch("/api/question", { method: "POST", headers: entetes, body: JSON.stringify({ question }) });
-    sortie.textContent = (await r.json()).reponse || "pas de réponse.";
-  } catch { sortie.textContent = "mouchard ne répond pas."; }
+    sortie.textContent = (await r.json()).reponse || "no answer.";
+  } catch { sortie.textContent = "mouchard is not responding."; }
   boutons.forEach((b) => (b.disabled = false));
 }
 
