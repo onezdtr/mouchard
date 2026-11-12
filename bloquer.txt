@@ -1,0 +1,4 @@
+# Un domaine par ligne : il bloque aussi ses sous-domaines. Le fichier est relu à chaud.
+doubleclick.net
+googlesyndication.com
+app-measurement.com
