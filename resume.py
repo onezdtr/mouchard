@@ -9,6 +9,7 @@ import sqlite3
 import sys
 import time
 import urllib.request
+from pathlib import Path
 
 from mouchard import BASE, alerter
 
@@ -36,12 +37,25 @@ def donnees(depuis):
     return list(appareils.values())
 
 
-def demander(donnees_json):
+CONSIGNE_QUESTION = """Tu es l'administrateur réseau d'une maison. On te donne, appareil par appareil, les domaines
+contactés en 24 h, puis une question. Réponds en français simple et court, uniquement d'après ces données ;
+si elles ne permettent pas de répondre, dis-le."""
+
+
+def cle():
+    """La variable GEMINI_API_KEY, sinon le fichier ~/.config/mouchard/cle (pour ne pas la taper en clair)."""
+    fichier = Path.home() / ".config/mouchard/cle"
+    return os.environ.get("GEMINI_API_KEY") or (fichier.read_text().strip() if fichier.exists() else "")
+
+
+def demander(donnees_json, question=None):
+    """Sans question : le résumé du soir. Avec : la réponse de l'agent à cette question."""
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODELE}:generateContent"
-    corps = {"systemInstruction": {"parts": [{"text": CONSIGNE}]},
-             "contents": [{"role": "user", "parts": [{"text": donnees_json}]}]}
+    texte = donnees_json + (f"\n\nQuestion : {question}" if question else "")
+    corps = {"systemInstruction": {"parts": [{"text": CONSIGNE_QUESTION if question else CONSIGNE}]},
+             "contents": [{"role": "user", "parts": [{"text": texte}]}]}
     req = urllib.request.Request(url, json.dumps(corps).encode(), {
-        "Content-Type": "application/json", "x-goog-api-key": os.environ["GEMINI_API_KEY"]})
+        "Content-Type": "application/json", "x-goog-api-key": cle()})
     reponse = json.load(urllib.request.urlopen(req, timeout=120))
     return "".join(p.get("text", "") for p in reponse["candidates"][0]["content"]["parts"])
 

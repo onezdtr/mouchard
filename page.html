@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mouchard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  /* Radar : nuit profonde, vert néon pour ce qui passe, rouge pour ce qui est bloqué */
+  :root { --fond: #040a12; --panneau: #08121e; --trait: #11283b; --texte: #cfe6f5; --doux: #5f7d92;
+    --neon: #39ff9c; --cyan: #4cc9f0; --rouge: #ff4d6d; --mono: "JetBrains Mono", ui-monospace, monospace; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fond); color: var(--texte); font: 14px/1.55 var(--mono); min-height: 100vh; }
+  header { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 16px 24px; border-bottom: 1px solid var(--trait); }
+  h1 { margin: 0; font-size: 18px; letter-spacing: 6px; font-weight: 700; color: var(--neon); text-shadow: 0 0 12px rgb(57 255 156 / .45); }
+  .ecoute { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; letter-spacing: 2px; color: var(--neon); }
+  .ecoute::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--neon); box-shadow: 0 0 10px var(--neon); animation: pouls 1.6s infinite; }
+  .ecoute.coupe { color: var(--rouge); }
+  .ecoute.coupe::before { background: var(--rouge); box-shadow: 0 0 10px var(--rouge); animation: none; }
+  @keyframes pouls { 50% { opacity: .25; } }
+  #resume-chiffres { margin: 0 0 0 auto; color: var(--doux); font-size: 12px; }
+  main { display: grid; gap: 16px; padding: 16px 24px 32px; grid-template-columns: minmax(320px, 520px) 1fr; max-width: 1400px; margin: 0 auto; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 12px 16px 24px; } #resume-chiffres { margin-left: 0; } }
+  section { background: rgb(8 18 30 / .85); border: 1px solid var(--trait); border-radius: 6px; padding: 14px 16px; min-width: 0; }
+  h2 { margin: 0 0 10px; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--cyan); font-weight: 500; }
+  .colonne { display: grid; gap: 16px; align-content: start; min-width: 0; }
+  #radar { width: 100%; aspect-ratio: 1; display: block; cursor: crosshair; }
+  ul { list-style: none; margin: 0; padding: 0; }
+  #appareils { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .appareil { background: none; border: 1px solid var(--trait); color: var(--texte); font: inherit; font-size: 12px; padding: 5px 10px;
+    border-radius: 4px; cursor: pointer; }
+  .appareil span { color: var(--doux); margin-left: 6px; }
+  .appareil[aria-pressed="true"] { border-color: var(--neon); color: var(--neon); box-shadow: 0 0 10px rgb(57 255 156 / .2) inset; }
+  .ligne { display: flex; align-items: center; gap: 12px; padding: 5px 0; border-bottom: 1px solid rgb(17 40 59 / .7); font-size: 13px; }
+  .ligne:last-child { border-bottom: 0; }
+  .ligne .d { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .petit { color: var(--doux); font-size: 12px; white-space: nowrap; }
+  .n { color: var(--neon); min-width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
+  .bloque .d { color: var(--rouge); }
+  .bloque .d::before { content: "✕ "; }
+  #direct .ligne:first-child .d { color: var(--neon); }
+  #direct .ligne.bloque:first-child .d { color: var(--rouge); }
+  .flux { max-height: 300px; overflow-y: auto; }
+  button.bloquer { background: none; border: 1px solid var(--trait); color: var(--doux); font: inherit; font-size: 11px; padding: 2px 8px;
+    border-radius: 3px; cursor: pointer; }
+  button.bloquer:hover { border-color: var(--rouge); color: var(--rouge); }
+  .console form { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .console label { color: var(--neon); }
+  .console input { flex: 1; min-width: 180px; background: none; border: 0; color: var(--texte); font: inherit; padding: 6px 0; caret-color: var(--neon); }
+  .console input::placeholder { color: var(--doux); }
+  .console input:focus { outline: none; }
+  .console form:focus-within { box-shadow: 0 1px 0 var(--neon); }
+  .console button { background: none; border: 1px solid var(--neon); color: var(--neon); font: inherit; font-size: 12px; padding: 6px 12px;
+    border-radius: 3px; cursor: pointer; letter-spacing: 1px; }
+  .console button:hover { background: var(--neon); color: var(--fond); }
+  .console button.second { border-color: var(--cyan); color: var(--cyan); }
+  .console button.second:hover { background: var(--cyan); color: var(--fond); }
+  .console button:disabled { opacity: .4; cursor: wait; }
+  #reponse { white-space: pre-wrap; margin: 12px 0 0; padding: 10px 12px; border-left: 2px solid var(--neon); background: rgb(57 255 156 / .04); }
+  #reponse:empty { display: none; }
+  :focus-visible { outline: 1px solid var(--neon); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { .ecoute::before { animation: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>◉ MOUCHARD</h1>
+  <span class="ecoute" id="ecoute">EN ÉCOUTE</span>
+  <p id="resume-chiffres">connexion…</p>
+</header>
+<main>
+  <div class="colonne">
+    <section aria-labelledby="t-radar">
+      <h2 id="t-radar">Radar · 24 h</h2>
+      <canvas id="radar" role="img" aria-label="Radar des appareils du réseau ; utilise les boutons dessous pour en choisir un"></canvas>
+      <ul id="appareils" aria-label="Appareils"></ul>
+    </section>
+  </div>
+  <div class="colonne">
+    <section class="console" aria-labelledby="t-agent">
+      <h2 id="t-agent">Agent</h2>
+      <form id="form-question">
+        <label for="question">&gt;</label>
+        <input id="question" placeholder="interroger l'agent…" maxlength="500" autocomplete="off">
+        <button type="submit">ENVOYER</button>
+        <button type="button" class="second" id="bouton-resume">RAPPORT DU JOUR</button>
+      </form>
+      <p id="reponse" aria-live="polite"></p>
+    </section>
+    <section aria-labelledby="t-direct">
+      <h2 id="t-direct">Flux en direct</h2>
+      <ul id="direct" class="flux"></ul>
+    </section>
+    <section aria-labelledby="t-domaines">
+      <h2 id="t-domaines">Domaines les plus contactés</h2>
+      <ul id="domaines" class="flux"></ul>
+    </section>
+  </div>
+</main>
+<script>
+const jeton = new URLSearchParams(location.search).get("jeton") || "";
+const entetes = { "X-Jeton": jeton, "Content-Type": "application/json" };
+let choisi = null, appareils = [], vus = {};  // vus : dernière requête connue par appareil, pour faire « pinger » son point
+const calme = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// les domaines viennent du réseau : on n'écrit jamais de HTML avec, seulement du texte
+function el(tag, attrs = {}, ...enfants) {
+  const e = document.createElement(tag);
+  Object.assign(e, attrs);
+  e.append(...enfants);
+  return e;
+}
+const heure = (t) => new Date(t * 1000).toLocaleTimeString("fr-FR");
+
+async function rafraichir() {
+  let r;
+  try { r = await fetch("/api/etat" + (choisi ? "?ip=" + encodeURIComponent(choisi) : ""), { headers: entetes }); }
+  catch { return signal(false, "mouchard ne répond plus"); }
+  if (!r.ok) return signal(false, "accès refusé : ouvre l'adresse avec le jeton");
+  const etat = await r.json();
+  const avant = appareils;
+  appareils = etat.appareils;
+  const total = appareils.reduce((s, a) => s + a.requetes, 0), bloquees = appareils.reduce((s, a) => s + a.bloquees, 0);
+  signal(true, `${appareils.length} appareil${appareils.length > 1 ? "s" : ""} · ${total} requêtes · ${bloquees} bloquée${bloquees > 1 ? "s" : ""}`);
+
+  for (const a of appareils) {
+    if (a.dernier && vus[a.ip] && a.dernier > vus[a.ip]) a.ping = performance.now();
+    else a.ping = (avant.find((x) => x.ip === a.ip) || {}).ping;
+    vus[a.ip] = a.dernier;
+  }
+
+  document.getElementById("appareils").replaceChildren(
+    el("li", {}, el("button", { className: "appareil", ariaPressed: String(!choisi), onclick: () => choisir(null), textContent: "tout le réseau" })),
+    ...appareils.map((a) => el("li", {}, el("button", { className: "appareil", ariaPressed: String(choisi === a.ip), onclick: () => choisir(a.ip) },
+      a.ip, el("span", { textContent: a.requetes })))));
+
+  document.getElementById("domaines").replaceChildren(...etat.domaines.map((d) => el("li", { className: "ligne" + (d.bloque ? " bloque" : "") },
+    el("span", { className: "n", textContent: d.requetes }), el("span", { className: "d", textContent: d.domaine }),
+    d.bloque ? "" : el("button", { className: "bloquer", textContent: "bloquer", onclick: () => bloquer(d.domaine) }))));
+
+  document.getElementById("direct").replaceChildren(...etat.direct.map((d) => el("li", { className: "ligne" + (d.bloque ? " bloque" : "") },
+    el("span", { className: "petit", textContent: heure(d.t) }), el("span", { className: "d", textContent: d.domaine }),
+    el("span", { className: "petit", textContent: d.ip }))));
+}
+
+function signal(ok, texte) {
+  document.getElementById("ecoute").classList.toggle("coupe", !ok);
+  document.getElementById("ecoute").textContent = ok ? "EN ÉCOUTE" : "HORS LIGNE";
+  document.getElementById("resume-chiffres").textContent = texte;
+}
+
+function choisir(ip) { choisi = ip; rafraichir(); }
+
+async function bloquer(domaine) {
+  if (!confirm(`Bloquer ${domaine} et tous ses sous-domaines ?`)) return;
+  await fetch("/api/bloquer", { method: "POST", headers: entetes, body: JSON.stringify({ domaine }) });
+  rafraichir();
+}
+
+async function demander(question) {
+  const sortie = document.getElementById("reponse"), boutons = document.querySelectorAll(".console button");
+  boutons.forEach((b) => (b.disabled = true));
+  sortie.textContent = "analyse en cours…";
+  try {
+    const r = await fetch("/api/question", { method: "POST", headers: entetes, body: JSON.stringify({ question }) });
+    sortie.textContent = (await r.json()).reponse || "pas de réponse.";
+  } catch { sortie.textContent = "mouchard ne répond pas."; }
+  boutons.forEach((b) => (b.disabled = false));
+}
+
+document.getElementById("form-question").onsubmit = (e) => {
+  e.preventDefault();
+  const q = document.getElementById("question").value.trim();
+  if (q) demander(q);
+};
+document.getElementById("bouton-resume").onclick = () => demander("");
+
+// --- Radar : chaque appareil a un angle fixe (tiré de son IP) ; plus il est actif, plus il est près du centre ---
+const toile = document.getElementById("radar"), ctx = toile.getContext("2d");
+const angleDe = (ip) => [...ip].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 360 * Math.PI / 180;
+
+function positions(R) {
+  const max = Math.max(1, ...appareils.map((a) => a.requetes));
+  return appareils.map((a) => {
+    const r = R * (0.88 - 0.6 * Math.sqrt(a.requetes / max)), ang = angleDe(a.ip);
+    return { a, x: R + r * Math.cos(ang), y: R + r * Math.sin(ang) };
+  });
+}
+
+function dessiner(t) {
+  const taille = toile.clientWidth, dpr = devicePixelRatio || 1;
+  if (toile.width !== taille * dpr) { toile.width = toile.height = taille * dpr; }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const R = taille / 2;
+  ctx.clearRect(0, 0, taille, taille);
+
+  ctx.strokeStyle = "#11283b"; ctx.lineWidth = 1;
+  for (const k of [0.25, 0.5, 0.75, 0.98]) { ctx.beginPath(); ctx.arc(R, R, R * k, 0, 2 * Math.PI); ctx.stroke(); }
+  ctx.beginPath(); ctx.moveTo(R, 2); ctx.lineTo(R, taille - 2); ctx.moveTo(2, R); ctx.lineTo(taille - 2, R); ctx.stroke();
+
+  const balayage = calme ? -Math.PI / 4 : (t / 2200) % (2 * Math.PI);
+  const cone = ctx.createConicGradient(balayage - 0.9, R, R);
+  cone.addColorStop(0, "rgb(57 255 156 / 0)"); cone.addColorStop(0.14, "rgb(57 255 156 / .22)"); cone.addColorStop(0.1433, "rgb(57 255 156 / 0)");
+  ctx.fillStyle = cone; ctx.beginPath(); ctx.arc(R, R, R * 0.98, 0, 2 * Math.PI); ctx.fill();
+
+  ctx.fillStyle = "#4cc9f0"; ctx.beginPath(); ctx.arc(R, R, 4, 0, 2 * Math.PI); ctx.fill();
+
+  ctx.font = "11px JetBrains Mono, monospace";
+  for (const { a, x, y } of positions(R)) {
+    const rouge = a.bloquees > 0 && a.bloquees >= a.requetes / 2, coul = rouge ? "#ff4d6d" : "#39ff9c";
+    const age = a.ping ? (t - a.ping) / 1500 : 9;
+    if (age < 1 && !calme) {
+      ctx.strokeStyle = coul; ctx.globalAlpha = 1 - age;
+      ctx.beginPath(); ctx.arc(x, y, 6 + age * 22, 0, 2 * Math.PI); ctx.stroke(); ctx.globalAlpha = 1;
+    }
+    ctx.shadowColor = coul; ctx.shadowBlur = choisi === a.ip ? 18 : 10;
+    ctx.fillStyle = coul; ctx.beginPath(); ctx.arc(x, y, choisi === a.ip ? 6 : 4.5, 0, 2 * Math.PI); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = choisi === a.ip ? coul : "#5f7d92";
+    ctx.fillText(a.ip, x + 9, y + 4);
+  }
+  if (!calme) requestAnimationFrame(dessiner);
+}
+
+toile.addEventListener("click", (e) => {
+  const boite = toile.getBoundingClientRect(), R = boite.width / 2;
+  const proche = positions(R).find(({ x, y }) => Math.hypot(x - (e.clientX - boite.left), y - (e.clientY - boite.top)) < 14);
+  choisir(proche ? proche.a.ip : null);
+});
+
+rafraichir().then(() => requestAnimationFrame(dessiner));
+setInterval(() => rafraichir().then(() => calme && requestAnimationFrame(dessiner)), 3000);
+</script>
+</body>
+</html>

@@ -42,6 +42,17 @@ def test_liste_sous_domaines_et_relecture():
         assert liste.contient("www.exemple.fr") and not liste.contient("ad.doubleclick.net")
 
 
+def test_bloquer_refuse_les_domaines_invalides():
+    import web
+    for mauvais in ("", "pas un domaine", "a\nb.com", "x" * 300 + ".com", "../etc", "com"):
+        try:
+            web.bloquer(mauvais)
+        except ValueError:
+            continue
+        raise AssertionError(mauvais)
+    assert web.DOMAINE.match("ads.tiktok.com") and web.DOMAINE.match("_dns.example.fr")
+
+
 if __name__ == "__main__":
     for nom, f in list(globals().items()):
         if nom.startswith("test_"):

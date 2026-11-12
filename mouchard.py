@@ -131,6 +131,8 @@ class Gestion(socketserver.BaseRequestHandler):
 
 
 if __name__ == "__main__":
+    import web  # ici, pas en haut : web importe ce module
     serveur = socketserver.ThreadingUDPServer((ECOUTE, PORT), Gestion)
     print(f"mouchard écoute sur {ECOUTE}:{PORT}, relais {AMONT[0]}", flush=True)
+    threading.Thread(target=web.servir, args=(ECOUTE,), daemon=True).start()
     serveur.serve_forever()
