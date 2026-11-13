@@ -1,7 +1,7 @@
 """Telegram : alertes, rapport du jour, propositions de blocage avec boutons, et questions à l'agent.
 
-Bot propre à mouchard : ~/.config/mouchard/telegram (jeton BotFather). Le premier chat qui lui écrit est
-appairé (~/.config/mouchard/telegram_chat), et lui seul est ensuite écouté.
+Bot propre à khada3 : ~/.config/khada3/telegram (jeton BotFather). Le premier chat qui lui écrit est
+appairé (~/.config/khada3/telegram_chat), et lui seul est ensuite écouté.
 Sans ce bot, les messages partent par le bot du chasseur d'alternance, sans boutons ni questions :
 on ne peut pas écouter un bot qu'un autre programme écoute déjà.
 """
@@ -11,7 +11,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-PROPRE = Path.home() / ".config/mouchard"
+PROPRE = Path.home() / ".config/khada3"
 SECOURS = Path.home() / ".config/alternance"
 
 
@@ -64,7 +64,7 @@ def traiter(maj, chat):
         return f"{domaine} blocked." if action == "b" else f"{domaine} ignored."
     texte = maj.get("message", {}).get("text", "").strip()
     if texte in ("/start", "/help"):
-        return "mouchard is listening. Ask me anything about your network, or send /report for the daily report."
+        return "khada3 is listening. Ask me anything about your network, or send /report for the daily report."
     if texte == "/report":
         rapport, propositions = resume.rapport()
         for p in propositions:

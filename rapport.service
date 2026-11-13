@@ -1,0 +1,9 @@
+[Unit]
+Description=khada3: daily report to Telegram
+After=network-online.target
+
+[Service]
+Type=oneshot
+Environment=KHADA3_LANGUE=French
+WorkingDirectory=%h/khada3
+ExecStart=/usr/bin/python3 %h/khada3/resume.py

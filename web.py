@@ -1,6 +1,6 @@
-"""Tableau de bord de mouchard : appareils, domaines en direct, blocage, et questions à l'agent IA.
+"""Tableau de bord de khada3 : appareils, domaines en direct, blocage, et questions à l'agent IA.
 
-Lancé par mouchard.py. L'historique DNS est privé : toute requête doit porter le jeton (~/.config/mouchard/jeton).
+Lancé par khada3.py. L'historique DNS est privé : toute requête doit porter le jeton (~/.config/khada3/jeton).
 """
 import json
 import os
@@ -15,10 +15,10 @@ from urllib.parse import parse_qs, urlparse
 import messager
 import qui
 import resume
-from mouchard import AUTORISER, BASE, DOMAINE, LISTE, est_bloque, fabricant, verrou
+from khada3 import AUTORISER, BASE, DOMAINE, LISTE, est_bloque, fabricant, verrou
 
-PORT_WEB = int(os.environ.get("MOUCHARD_PORT_WEB", "8053"))
-FICHIER_JETON = Path.home() / ".config/mouchard/jeton"
+PORT_WEB = int(os.environ.get("KHADA3_PORT_WEB", "8053"))
+FICHIER_JETON = Path.home() / ".config/khada3/jeton"
 PAGE = Path(__file__).parent / "page.html"
 
 
@@ -56,7 +56,23 @@ def etat(ip=None):
     pays = sorted(({"pays": p, "requetes": n} for p, n in par_pays.items()), key=lambda x: -x["requetes"])[:12]
     propositions = [dict(zip(("id", "domaine", "raison"), l)) for l in db.execute(
         "SELECT id, domaine, raison FROM propositions WHERE etat = 'attente' ORDER BY t DESC")]
-    return {"appareils": appareils, "domaines": domaines, "direct": direct, "pays": pays, "propositions": propositions}
+    return {"appareils": appareils, "domaines": domaines, "direct": direct, "pays": pays, "propositions": propositions,
+            "heures": heures(db, filtre, params)}
+
+
+def heures(db, filtre, params, maintenant=None):
+    """Les 24 dernières heures, heure par heure : requêtes, bloquées et les 5 domaines les plus demandés."""
+    debut = (maintenant or time.time()) // 3600 * 3600 - 23 * 3600  # début de l'heure, il y a 23 h
+    cases = [{"t": debut + k * 3600, "requetes": 0, "bloquees": 0, "top": []} for k in range(24)]
+    for k, domaine, n, bloquees in db.execute(
+            f"""SELECT CAST((t - ?) / 3600 AS INTEGER), domaine, COUNT(*), SUM(bloque) FROM requetes WHERE t >= ? {filtre}
+                GROUP BY 1, domaine ORDER BY 1, COUNT(*) DESC""", (debut, debut, *params)):
+        case = cases[min(k, 23)]
+        case["requetes"] += n
+        case["bloquees"] += bloquees
+        if len(case["top"]) < 5:
+            case["top"].append({"domaine": domaine, "requetes": n})
+    return cases
 
 
 def valide(domaine):
@@ -118,7 +134,7 @@ def decider(ident, accepter):
 
 def demander(question):
     if not resume.cle():
-        return "The agent has no API key: put it in ~/.config/mouchard/cle."
+        return "The agent has no API key: put it in ~/.config/khada3/cle."
     appareils = resume.donnees(time.time() - 86400)
     if not appareils:
         return "No DNS request in the last 24 hours: nothing to analyse."
@@ -149,7 +165,7 @@ class Gestion(BaseHTTPRequestHandler):
     def do_GET(self):
         url = urlparse(self.path)
         if not self.autorise():
-            return self.repondre(403, b"Missing token: open the URL printed when mouchard starts.", "text/plain")
+            return self.repondre(403, b"Missing token: open the URL printed when khada3 starts.", "text/plain")
         if url.path == "/":
             return self.repondre(200, PAGE.read_bytes(), "text/html; charset=utf-8")
         if url.path == "/api/etat":

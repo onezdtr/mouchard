@@ -15,10 +15,10 @@ from pathlib import Path
 
 import qui
 import messager
-from mouchard import BASE, DOMAINE, candidats, est_bloque, fabricant, verrou
+from khada3 import BASE, DOMAINE, candidats, est_bloque, fabricant, verrou
 
-MODELE = os.environ.get("MOUCHARD_MODELE", "gemini-3.1-flash-lite")
-LANGUE = os.environ.get("MOUCHARD_LANGUE", "English")  # langue du rapport du jour
+MODELE = os.environ.get("KHADA3_MODELE", "gemini-3.1-flash-lite")
+LANGUE = os.environ.get("KHADA3_LANGUE", "English")  # langue du rapport du jour
 CONSIGNE = f"""You are the network administrator of a home. You get, device by device, the domains contacted
 in the last 24 hours: number of requests, how many were blocked, the company behind the domain and its activity
 when known (from the Disconnect tracker list), and the country of its server. Device names may be set by the owner,
@@ -59,8 +59,8 @@ if the data cannot answer it, say so."""
 
 
 def cle():
-    """La variable GEMINI_API_KEY, sinon le fichier ~/.config/mouchard/cle (pour ne pas la taper en clair)."""
-    fichier = Path.home() / ".config/mouchard/cle"
+    """La variable GEMINI_API_KEY, sinon le fichier ~/.config/khada3/cle (pour ne pas la taper en clair)."""
+    fichier = Path.home() / ".config/khada3/cle"
     return os.environ.get("GEMINI_API_KEY") or (fichier.read_text().strip() if fichier.exists() else "")
 
 
@@ -82,7 +82,7 @@ def rapport():
     """(texte du rapport, nouvelles propositions enregistrées) ; les propositions sont filtrées avant d'être gardées."""
     appareils = donnees(time.time() - 86400)
     if not appareils:
-        return "mouchard: no DNS request in the last 24 hours. Is the server running?", []
+        return "khada3: no DNS request in the last 24 hours. Is the server running?", []
     reponse = json.loads(demander(json.dumps(appareils, ensure_ascii=False)))
     vus = {d["domaine"] for a in appareils for d in a["domaines"]}
     nouvelles = []
@@ -95,7 +95,7 @@ def rapport():
                 curseur = db.execute("INSERT OR IGNORE INTO propositions (t, domaine, raison) VALUES (?, ?, ?)", (time.time(), domaine, raison))
                 if curseur.rowcount:
                     nouvelles.append({"id": curseur.lastrowid, "domaine": domaine, "raison": raison})
-    return "mouchard, daily report\n\n" + reponse.get("rapport", ""), nouvelles
+    return "khada3, daily report\n\n" + reponse.get("rapport", ""), nouvelles
 
 
 if __name__ == "__main__":

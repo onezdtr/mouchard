@@ -1,6 +1,6 @@
 """Qui est derrière un domaine : l'entreprise et son activité (liste Disconnect), et le pays de son serveur (DB-IP).
 
-Les deux fichiers sont téléchargés dans listes/ par mouchard.py ; sans eux, tout répond « inconnu ».
+Les deux fichiers sont téléchargés dans listes/ par khada3.py ; sans eux, tout répond « inconnu ».
 """
 import bisect
 import csv
@@ -25,7 +25,7 @@ NOMS = {"FingerprintingInvasive": "fingerprinting", "FingerprintingGeneral": "fi
 
 
 class Charge:
-    """Recharge un fichier de données quand il change (mêmes règles que mouchard.Liste)."""
+    """Recharge un fichier de données quand il change (mêmes règles que khada3.Liste)."""
     def __init__(self, chemin, lire):
         self.chemin, self.lire, self.date, self.valeur = chemin, lire, None, None
 

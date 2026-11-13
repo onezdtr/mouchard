@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>mouchard</title>
+<title>khada3</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -77,6 +77,20 @@
   button.oui { background: none; border: 1px solid var(--rouge); color: var(--rouge); font: inherit; font-size: 12px; padding: 2px 8px; border-radius: 3px; cursor: pointer; }
   button.oui:hover { background: var(--rouge); color: var(--fond); }
   #bloc-propositions { border-color: rgb(255 77 109 / .45); }
+  .legende { display: flex; gap: 14px; margin: -4px 0 10px; color: var(--doux); font-size: 12px; }
+  .legende span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; background: var(--neon); }
+  .legende .rouge::before { background: var(--rouge); }
+  #heures { display: flex; align-items: flex-end; gap: 2px; height: 120px; border-bottom: 1px solid var(--trait); }
+  .heure { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; background: none; border: 0;
+    padding: 0; cursor: pointer; min-width: 0; }
+  .heure i { display: block; width: 100%; background: var(--neon); opacity: .75; }
+  .heure i.rouge { background: var(--rouge); }
+  .heure i:first-child { border-radius: 4px 4px 0 0; }
+  .heure:hover i, .heure:focus-visible i, .heure[aria-pressed="true"] i { opacity: 1; }
+  .heure[aria-pressed="true"] { box-shadow: 0 2px 0 var(--neon); }
+  .axe { display: flex; justify-content: space-between; color: var(--doux); font-size: 12px; margin-top: 4px; }
+  #detail-heure { margin-top: 10px; min-height: 1.5em; font-size: 13px; }
+  #detail-heure .titre { color: var(--cyan); }
   .credits { grid-column: 1 / -1; color: var(--doux); font-size: 12px; margin: 0; }
   .credits a { color: inherit; }
   #reponse { white-space: pre-wrap; margin: 12px 0 0; padding: 10px 12px; border-left: 2px solid var(--neon); background: rgb(57 255 156 / .04); }
@@ -87,7 +101,7 @@
 </head>
 <body>
 <header>
-  <h1>◉ MOUCHARD</h1>
+  <h1>◉ KHADA3</h1>
   <span class="ecoute" id="ecoute">LISTENING</span>
   <p id="resume-chiffres">connecting…</p>
 </header>
@@ -97,6 +111,13 @@
       <h2 id="t-radar">Radar · 24 h</h2>
       <canvas id="radar" role="img" aria-label="Radar of the devices on the network; use the buttons below to pick one"></canvas>
       <ul id="appareils" aria-label="Devices"></ul>
+    </section>
+    <section aria-labelledby="t-heures">
+      <h2 id="t-heures">Timeline · 24 h</h2>
+      <p class="legende"><span>allowed</span><span class="rouge">blocked</span></p>
+      <div id="heures" role="group" aria-label="Requests per hour; pick an hour to see its domains"></div>
+      <div class="axe" id="axe-heures"></div>
+      <div id="detail-heure" aria-live="polite"></div>
     </section>
   </div>
   <div class="colonne">
@@ -132,7 +153,7 @@
 <script>
 const jeton = new URLSearchParams(location.search).get("jeton") || "";
 const entetes = { "X-Jeton": jeton, "Content-Type": "application/json" };
-let choisi = null, appareils = [], vus = {};  // vus : dernière requête connue par appareil, pour faire « pinger » son point
+let choisi = null, appareils = [], vus = {}, heures = [], heureChoisie = null, survol = null;  // vus : dernière requête connue par appareil, pour faire « pinger » son point
 const calme = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // les domaines viennent du réseau : on n'écrit jamais de HTML avec, seulement du texte
@@ -147,7 +168,7 @@ const heure = (t) => new Date(t * 1000).toLocaleTimeString("en-GB");
 async function rafraichir() {
   let r;
   try { r = await fetch("/api/etat" + (choisi ? "?ip=" + encodeURIComponent(choisi) : ""), { headers: entetes }); }
-  catch { return signal(false, "mouchard is not responding"); }
+  catch { return signal(false, "khada3 is not responding"); }
   if (!r.ok) return signal(false, "access denied: open the URL printed at startup, with its token");
   const etat = await r.json();
   const avant = appareils;
@@ -187,9 +208,45 @@ async function rafraichir() {
     el("span", { className: "jauge" }, el("i", { style: `width:${(100 * p.requetes / max).toFixed(1)}%` })),
     el("span", { className: "n", textContent: p.requetes }))));
 
+  heures = etat.heures;
+  dessinerHeures();
+
   document.getElementById("direct").replaceChildren(...etat.direct.map((d) => el("li", { className: "ligne" + (d.bloque ? " bloque" : "") },
     el("span", { className: "petit", textContent: heure(d.t) }), el("span", { className: "d", textContent: d.domaine }),
     el("span", { className: "petit", textContent: nomDe(appareils.find((a) => a.ip === d.ip) || { ip: d.ip }) }))));
+}
+
+// --- Chronologie : une barre par heure, la part bloquée en rouge au-dessus ---
+const hh = (t) => new Date(t * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+
+function dessinerHeures() {
+  const max = Math.max(1, ...heures.map((h) => h.requetes)), zone = document.getElementById("heures");
+  heures.forEach((h, k) => {
+    // les boutons sont gardés d'un rafraîchissement à l'autre : le focus clavier ne saute pas toutes les 3 s
+    const b = zone.children[k] || zone.appendChild(el("button", { className: "heure",
+      onmouseenter: () => { survol = heures[k].t; detailHeure(); }, onfocus: () => { survol = heures[k].t; detailHeure(); },
+      onmouseleave: () => { survol = null; detailHeure(); }, onblur: () => { survol = null; detailHeure(); },
+      onclick: () => { heureChoisie = heureChoisie === heures[k].t ? null : heures[k].t; dessinerHeures(); } }));
+    const passees = h.requetes - h.bloquees, part = (n) => `height:calc(${(100 * n / max).toFixed(2)}% - 2px)`;
+    b.ariaPressed = String(heureChoisie === h.t);
+    b.ariaLabel = `${hh(h.t)}: ${h.requetes} requests, ${h.bloquees} blocked`;
+    b.replaceChildren(...(h.bloquees ? [el("i", { className: "rouge", style: part(h.bloquees) })] : []), ...(passees ? [el("i", { style: part(passees) })] : []));
+  });
+  document.getElementById("axe-heures").replaceChildren(...[0, 6, 12, 18, 23].map((k) => el("span", { textContent: heures[k] ? hh(heures[k].t) : "" })));
+  detailHeure();
+}
+
+// survol ou focus : cette heure ; sinon l'heure cliquée ; sinon le chiffre du pic
+function detailHeure() {
+  const h = heures.find((x) => x.t === survol) || heures.find((x) => x.t === heureChoisie);
+  const zone = document.getElementById("detail-heure");
+  if (!h) {
+    const pic = heures.reduce((a, b) => (b.requetes > a.requetes ? b : a), heures[0] || { requetes: 0 });
+    return zone.replaceChildren(pic.requetes ? el("span", { className: "petit", textContent: `peak ${pic.requetes} requests at ${hh(pic.t)} · pick an hour` }) : "");
+  }
+  zone.replaceChildren(el("div", { className: "titre", textContent: `${hh(h.t)}–${hh(h.t + 3600)} · ${h.requetes} requests · ${h.bloquees} blocked` }),
+    ...h.top.map((d) => el("div", { className: "ligne" }, el("span", { className: "n", textContent: d.requetes }),
+      el("span", { className: "d", textContent: d.domaine }))));
 }
 
 function signal(ok, texte) {
@@ -241,7 +298,7 @@ async function demander(question) {
   try {
     const r = await fetch("/api/question", { method: "POST", headers: entetes, body: JSON.stringify({ question }) });
     sortie.textContent = (await r.json()).reponse || "no answer.";
-  } catch { sortie.textContent = "mouchard is not responding."; }
+  } catch { sortie.textContent = "khada3 is not responding."; }
   boutons.forEach((b) => (b.disabled = false));
 }
 
