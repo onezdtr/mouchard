@@ -128,6 +128,10 @@ The daily report at 21:00: `cp rapport.service rapport.timer ~/.config/systemd/u
 
 [StevenBlack/hosts](https://github.com/StevenBlack/hosts) (blocklist) · [Hagezi DNS blocklists](https://github.com/hagezi/dns-blocklists) (suggestions) · [Disconnect tracker list](https://disconnect.me/trackerprotection) (companies) · [IP Geolocation by DB-IP](https://db-ip.com) (countries, CC BY 4.0) · maker names from the IEEE OUI list (`hwdata` package).
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Run `python3 test_khada3.py` before opening a pull request.
+
 ## License
 
 MIT
